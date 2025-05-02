@@ -1,0 +1,22 @@
+# Ignore real .env files that contain secrets
+.env
+.env.local
+.env.development
+.env.production
+
+# Maven/Gradle
+target/
+build/
+*.jar
+*.war
+*.ear
+*.class
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs
+logs/
+*.log
