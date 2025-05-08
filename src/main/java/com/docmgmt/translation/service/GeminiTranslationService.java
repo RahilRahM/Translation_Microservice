@@ -3,6 +3,7 @@ package com.docmgmt.translation.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
@@ -11,25 +12,86 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import jakarta.annotation.PostConstruct;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.File;
+import java.nio.file.Paths;
+
+/**
+ * Primary translation service implementation that uses Google's Gemini API
+ * for high-quality translations.
+ */
 @Service
-public class GeminiTranslationService implements TranslationService {
+@Primary
+public class GeminiTranslationService implements TranslationServiceInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiTranslationService.class);
-    private final String apiKey;
+    private String apiKey;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    private static final String ENV_FILE_PATH = "c:\\Users\\hp\\Desktop\\dms_micros\\trans_service\\.env";
 
-    public GeminiTranslationService(@Value("${app.gemini.api-key}") String apiKey) {
-        this.apiKey = apiKey;
+    public GeminiTranslationService(@Value("${app.gemini.api-key:}") String configApiKey) {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
-        logger.info("GeminiTranslationService initialized with Gemini 1.5 Flash model");
+        
+        // Try to load API key from different sources
+        this.apiKey = configApiKey;
+        if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
+            this.apiKey = loadApiKeyFromEnvFile();
+        }
+        
+        if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
+            this.apiKey = System.getenv("GEMINI_API_KEY");
+        }
+
+        if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
+            logger.warn("No Gemini API key found in any source. Translations will fail.");
+        } else {
+            logger.info("GeminiTranslationService initialized with API key: {}...", this.apiKey.substring(0, 8));
+        }
+        
+        logger.info("GeminiTranslationService is the PRIMARY translation implementation");
+    }
+    
+    private String loadApiKeyFromEnvFile() {
+        logger.info("Attempting to load API key from .env file: {}", ENV_FILE_PATH);
+        try {
+            File envFile = new File(ENV_FILE_PATH);
+            if (!envFile.exists()) {
+                logger.warn(".env file not found at path: {}", ENV_FILE_PATH);
+                return null;
+            }
+            
+            BufferedReader reader = new BufferedReader(new FileReader(envFile));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("GEMINI_API_KEY=")) {
+                    String key = line.substring("GEMINI_API_KEY=".length()).trim();
+                    logger.info("Successfully loaded API key from .env file");
+                    reader.close();
+                    return key;
+                }
+            }
+            reader.close();
+            logger.warn("GEMINI_API_KEY not found in .env file");
+            return null;
+        } catch (Exception e) {
+            logger.error("Error reading .env file: {}", e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override
     public String translateText(String text, String sourceLanguage, String targetLanguage) {
-        logger.debug("Translating from {} to {}: '{}'", sourceLanguage, targetLanguage, text);
+        logger.info("Translating text from {} to {} using Gemini API: '{}'", 
+                sourceLanguage, targetLanguage, text);
+        
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new RuntimeException("Gemini API key is not configured. Set GEMINI_API_KEY environment variable.");
+        }
         
         try {
             // Create the request body JSON structure

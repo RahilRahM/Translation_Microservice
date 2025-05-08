@@ -3,7 +3,7 @@ package com.docmgmt.translation.controller;
 import com.docmgmt.translation.model.TranslationRequest;
 import com.docmgmt.translation.model.TranslationResponse;
 import com.docmgmt.translation.model.TranslationResponse.Status;
-import com.docmgmt.translation.service.TranslationService;
+import com.docmgmt.translation.service.TranslationServiceInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +19,12 @@ import java.time.LocalDateTime;
 public class TranslationController {
 
     private static final Logger logger = LoggerFactory.getLogger(TranslationController.class);
-    private final TranslationService translationService;
+    private final TranslationServiceInterface translationService;
     private final RestTemplate restTemplate;
     private final String apiKey;
 
     @Autowired
-    public TranslationController(TranslationService translationService, 
+    public TranslationController(TranslationServiceInterface translationService, 
                                 @Value("${app.gemini.api-key}") String apiKey) {
         this.translationService = translationService;
         this.apiKey = apiKey;

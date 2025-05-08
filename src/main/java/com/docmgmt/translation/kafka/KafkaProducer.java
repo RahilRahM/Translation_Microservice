@@ -1,55 +1,35 @@
 package com.docmgmt.translation.kafka;
 
-import com.docmgmt.translation.model.TranslationRequest;
 import com.docmgmt.translation.model.TranslationResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
-@Component
-@RequiredArgsConstructor
-@Slf4j
+@Service
 public class KafkaProducer {
 
+    private static final Logger logger = LoggerFactory.getLogger(KafkaProducer.class);
+    
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ObjectMapper objectMapper;
     
     @Value("${app.topics.translation-response}")
     private String translationResponseTopic;
     
-    @Value("${app.topics.dlq}")
-    private String dlqTopic;
-    
-    public void sendTranslationResponse(TranslationResponse response) {
-        try {
-            log.info("Sending translation response for document: {}", response.getDocumentId());
-            kafkaTemplate.send(translationResponseTopic, response.getDocumentId(), response);
-        } catch (Exception e) {
-            log.error("Error sending translation response: {}", e.getMessage());
-        }
+    public KafkaProducer(KafkaTemplate<String, Object> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
     }
     
-    public void sendToDLQ(TranslationRequest request, Exception error) {
+    public void sendTranslationResponse(TranslationResponse response) {
+        logger.info("Sending translation response for document ID: {}", response.getDocumentId());
+        
         try {
-            log.info("Sending failed message to DLQ for document: {}", request.getDocumentId());
-            
-            Map<String, Object> dlqMessage = new HashMap<>();
-            dlqMessage.put("originalMessage", request);
-            dlqMessage.put("error", Map.of(
-                "message", error.getMessage(),
-                "timestamp", Instant.now().toString()
-            ));
-            
-            kafkaTemplate.send(dlqTopic, request.getDocumentId(), dlqMessage);
+            // Send to document.translation.response topic
+            kafkaTemplate.send(translationResponseTopic, response.getDocumentId(), response);
+            logger.info("Translation response sent successfully");
         } catch (Exception e) {
-            log.error("Error sending to DLQ: {}", e.getMessage());
+            logger.error("Failed to send translation response: {}", e.getMessage(), e);
         }
     }
 }

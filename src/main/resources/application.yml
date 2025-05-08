@@ -4,8 +4,10 @@ server:
 spring:
   application:
     name: translation-service
+  main:
+    allow-bean-definition-overriding: true
   kafka:
-    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: translation-service-group
       auto-offset-reset: earliest
@@ -19,7 +21,7 @@ spring:
 
 app:
   kafka:
-    enabled: ${KAFKA_ENABLED:false}  # Set to false by default for development
+    enabled: true  # Set to true since we're using Kafka in Docker
   topics:
     translation-request: ${KAFKA_TRANSLATION_REQUEST_TOPIC:document.translation.request}
     translation-response: ${KAFKA_TRANSLATION_RESPONSE_TOPIC:document.translation.response}
