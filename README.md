@@ -1,14 +1,15 @@
 # Translation Service
 
-A microservice that translates document titles using Google's Gemini API as part of a document management system microservices architecture.
+A microservice that translates document titles using Google's Gemini API as part of the Document Management System.
 
 ## Features
 
-- Real-time translation of document titles from English to Spanish
-- Asynchronous communication with Document Service via Kafka
-- Integration with Google's Gemini API for high-quality translations
-- Error handling with automatic retries for failed translations
-- Comprehensive logging for monitoring and debugging
+- Translation of document titles from English to Spanish
+- Communication with Document Service via Kafka
+- Integration with Google's Gemini API
+- Error handling with automatic retries
+- Logging for monitoring
+- REST API for direct translation requests
 
 ## Tech Stack
 
@@ -53,11 +54,13 @@ The service uses the following Kafka topics:
 
 ## API Endpoints
 
-For direct testing without Kafka:
+For direct testing without using Kafka:
 
 ```
 POST /api/translate
 ```
+
+This endpoint is accessible through the API Gateway at `http://localhost:8083/api/translate`.
 
 Example request:
 ```bash
