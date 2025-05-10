@@ -1,0 +1,50 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: translation-service
+  main:
+    allow-bean-definition-overriding: true
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: translation-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.docmgmt.translation.model"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  kafka:
+    enabled: true  # Set to true since we're using Kafka in Docker
+  topics:
+    translation-request: ${KAFKA_TRANSLATION_REQUEST_TOPIC:document.translation.request}
+    translation-response: ${KAFKA_TRANSLATION_RESPONSE_TOPIC:document.translation.response}
+    dlq: ${KAFKA_DLQ_TOPIC:document.translation.dlq}
+  gemini:
+    api-key: ${GEMINI_API_KEY:} # Get API key from environment variable only
+  retry:
+    max-attempts: ${MAX_RETRIES:3}
+    delay: ${RETRY_DELAY_MS:5000}
+
+# Add local testing endpoint configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# Adding basic logging configuration
+logging:
+  level:
+    com.docmgmt.translation: DEBUG
+    org.springframework.web: INFO
+    org.springframework.web.client.RestTemplate: INFO  # Changed to INFO for production
